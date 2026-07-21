@@ -1,6 +1,7 @@
 package Selenide.pages;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.By;
 
@@ -18,6 +19,10 @@ public class CatalogPage {
     private final SelenideElement searchInput = $(By.cssSelector(".SearchInput-module__xN-moW__selectInput"));
     private final SelenideElement searchButton = $(By.xpath("//button[.//span[text()='Найти']]"));
     private final SelenideElement nextPageButton = $(By.cssSelector(".PaginationBlock-module__U4yK7G__control:not([data-disabled]) svg[style*='rotate(-90deg)']")).parent();
+
+    private static final String PRODUCT_CARD_CSS = ".ProductCard-module__AiMWEW__wrapper";
+    private static final String PRODUCT_NAME_CSS = ".ProductCard-module__AiMWEW__link";
+    private static final String PRODUCT_PRICE_CSS = "h3[itemprop='price']";
 
     public String getCurrentCity() {
         return citySelector.shouldBe(Condition.visible).getText().trim();
@@ -39,20 +44,18 @@ public class CatalogPage {
                 ".//label[contains(.,'%s')]/ancestor::div[contains(@class,'Checkbox-module__fmEfMG__body')]//input[@type='checkbox']",
                 labelText
         );
-        SelenideElement checkboxKrasnodar = modal.$(By.xpath(xpathCheckbox));
-        checkboxKrasnodar.shouldBe(Condition.visible, Duration.ofSeconds(5));
-        if (!checkboxKrasnodar.isSelected()) {
-            checkboxKrasnodar.click();
+        SelenideElement checkboxCity = modal.$(By.xpath(xpathCheckbox));
+        checkboxCity.shouldBe(Condition.visible, Duration.ofSeconds(5));
+        if (!checkboxCity.isSelected()) {
+            checkboxCity.click();
         }
-
-        cityInput.clear();
-        cityInput.pressEnter();
 
         String xpathMoscow = ".//label[contains(.,'г. Москва')]/ancestor::div[contains(@class,'Checkbox-module__fmEfMG__body')]//input[@type='checkbox']";
         SelenideElement checkboxMoscow = modal.$(By.xpath(xpathMoscow));
         if (checkboxMoscow.exists() && checkboxMoscow.isSelected()) {
             checkboxMoscow.click();
         }
+
         SelenideElement applyButton = modal.$(By.xpath(".//button[.//span[text()='Применить']]"));
         applyButton.shouldBe(Condition.visible).click();
         modal.shouldNotBe(Condition.visible, Duration.ofSeconds(5));
@@ -66,30 +69,32 @@ public class CatalogPage {
 
     public CatalogPage clickSearch() {
         searchButton.shouldBe(Condition.visible).click();
-        $$(By.cssSelector(".ProductCard-module__AiMWEW__wrapper")).first().shouldBe(Condition.visible);
+        $$(PRODUCT_CARD_CSS).first().shouldBe(Condition.visible, Duration.ofSeconds(10));
         return this;
     }
 
     public List<Map<String, String>> getProductsFromCurrentPage() {
-        List<String> names = $$(By.cssSelector(".ProductCard-module__AiMWEW__wrapper .ProductCard-module__AiMWEW__link"))
-                .texts();
-
-        List<String> prices = $$(By.cssSelector(".ProductCard-module__AiMWEW__wrapper h3[itemprop='price']"))
-                .texts();
-
         List<Map<String, String>> products = new ArrayList<>();
-        int size = Math.min(names.size(), prices.size());
-        for (int i = 0; i < size; i++) {
-            Map<String, String> productData = new HashMap<>();
-            productData.put("name", names.get(i).trim());
-            productData.put("price", prices.get(i).trim());
-            products.add(productData);
+        ElementsCollection cards = $$(PRODUCT_CARD_CSS);
+        cards.first().shouldBe(Condition.visible, Duration.ofSeconds(5));
+
+        for (SelenideElement card : cards) {
+            try {
+                String name = card.$(PRODUCT_NAME_CSS).getText().trim();
+                String price = card.$(PRODUCT_PRICE_CSS).getText().trim();
+                Map<String, String> product = new HashMap<>();
+                product.put("name", name);
+                product.put("price", price);
+                products.add(product);
+            } catch (Exception e) {
+                continue;
+            }
         }
         return products;
     }
 
     public boolean isResultsDisplayed() {
-        return $$(By.cssSelector(".ProductCard-module__AiMWEW__wrapper")).size() > 0;
+        return $$(PRODUCT_CARD_CSS).size() > 0;
     }
 
     public boolean hasNextPage() {
@@ -98,7 +103,7 @@ public class CatalogPage {
 
     public CatalogPage goToNextPage() {
         nextPageButton.shouldBe(Condition.visible).click();
-        $$(By.cssSelector(".ProductCard-module__AiMWEW__wrapper")).first().shouldBe(Condition.visible);
+        $$(PRODUCT_CARD_CSS).first().shouldBe(Condition.visible, Duration.ofSeconds(10));
         return this;
     }
 }

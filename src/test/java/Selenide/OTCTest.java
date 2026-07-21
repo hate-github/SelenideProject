@@ -15,7 +15,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class OTCTest {
+public class OTCTest extends BaseTest {
     @Test
     public void searchAndSaveProducts() throws IOException {
         String searchQuery = ConfigLoader.get("search.query");
